@@ -65,7 +65,7 @@ def llm_completion(model, prompt, chat_history=None, return_finish_reason=False,
             response = litellm.completion(
                 model=request_model.replace('llamacpp/', 'openai/'),
                 messages=messages,
-                temperature=0.2,
+                temperature=0.0,
                 timeout=3600,
                 **kwargs
             )
@@ -118,7 +118,7 @@ async def llm_acompletion(model, prompt, enable_thinking=False):
             response = await litellm.acompletion(
                 model=request_model.replace('llamacpp/', 'openai/'),
                 messages=messages,
-                temperature=0.2,
+                temperature=0.0,
                 timeout=3600,
                 **kwargs
             )
@@ -632,11 +632,11 @@ def add_node_text_with_labels(node, pdf_pages):
 
 
 async def generate_node_summary(node, model=None):
-    prompt = f"""You are given a part of a document, your task is to generate a description of the partial document about what are main points covered in the partial document.
+    prompt = f"""You are given a part of a document, your task is to generate a description of the partial document about what are main points covered ONLY in the partial document.
 
     Partial Document Text: {node['text']}
     
-    Directly return the description, do not include any other text.
+    Directly return the description of 3 to 4 lines, do not include any other text.
     """
     response = await llm_acompletion(model, prompt)
     return response

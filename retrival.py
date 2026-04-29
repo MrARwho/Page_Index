@@ -66,7 +66,11 @@ Respond ONLY with a JSON array of string Node IDs. For example: ["0012", "0014"]
     response = litellm.completion(
         model=MODEL,
         messages=[{"role": "user", "content": search_prompt}],
-        temperature=0.1
+        temperature=0.0,
+        extra_body={
+        "reasoning_budget": 1000, # Limit reasoning to 500 tokens
+        "reasoning_format": "none" # Do not return the <think> blocks in the response
+    }
     )
     
     import re
@@ -103,17 +107,29 @@ Answer:"""
     final_response = litellm.completion(
         model=MODEL,
         messages=[{"role": "user", "content": answer_prompt}],
-        temperature=0.1
+        temperature=0.0,
+        extra_body={
+        "reasoning_budget": 1000, # Limit reasoning to 500 tokens
+        "reasoning_format": "none" # Do not return the <think> blocks in the response
+    }
     )
     
     return final_response.choices[0].message.content
 
 if __name__ == "__main__":
     # Point this to the JSON file you just successfully generated!
-    tree = load_tree("./results/UCIE_1.1_structure.json")
+    tree = load_tree("./results/pmbus_structure.json")
     
     # Ask your question
-    question = "What are the specific parameters and requirements for the physical layer?"
+    question = '''Instructions:
+
+    Extract Features Only: Identify every distinct module, hardware block, or functional capability mentioned in the specification.
+
+    Keep it Concise: Do not include detailed behavioral descriptions, interfaces, register mappings, or edge cases.
+
+    Be Exhaustive: Ensure no minor features, sub-modules, or distinct operational modes are missed.
+
+Output Format: Provide a clean, bulleted list containing only the names of the identified features and blocks. You may use nested bullets if a major block contains specific sub-features.'''
     
     final_answer = query_vectorless_rag(tree, question)
     
