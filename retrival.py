@@ -118,7 +118,7 @@ Answer:"""
 
 if __name__ == "__main__":
     # Point this to the JSON file you just successfully generated!
-    tree = load_tree("./results/pmbus_structure.json")
+    tree = load_tree("./results/UCIE_1.1_structure.json")
     
     # Ask your question
     question = '''Instructions:
