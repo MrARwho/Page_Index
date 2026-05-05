@@ -185,16 +185,44 @@ def extract_json(content):
         logging.error(f"Unexpected error while extracting JSON: {e}")
         return {}
 
-def write_node_id(data, node_id=0):
+def write_node_id(data, node_id=0, parent_id=None):
+    """Assign hierarchical N-ary tree node IDs.
+
+    Root nodes (parent_id is None) receive a sequential 4-digit zero-padded
+    ID (e.g. "0000", "0001", ...).  Every child node receives an ID formed by
+    concatenating its parent's ID, a dot, and the child's 1-based position
+    among its siblings (e.g. "0001.1", "0001.2", "0001.1.1").
+
+    The *node_id* parameter is only used for root-level sequential numbering
+    and is returned so callers that chain multiple calls still work correctly.
+    """
     if isinstance(data, dict):
-        data['node_id'] = str(node_id).zfill(4)
-        node_id += 1
+        # Assign the ID for this node
+        if parent_id is None:
+            # Root level: use zero-padded sequential counter
+            current_id = str(node_id).zfill(4)
+            node_id += 1
+        else:
+            # Non-root: ID was already computed by the parent and passed in
+            current_id = parent_id
+
+        data['node_id'] = current_id
+
+        # Recurse into children, giving each child its positional ID
         for key in list(data.keys()):
             if 'nodes' in key:
-                node_id = write_node_id(data[key], node_id)
+                node_id = write_node_id(data[key], node_id, parent_id=current_id)
+
     elif isinstance(data, list):
-        for index in range(len(data)):
-            node_id = write_node_id(data[index], node_id)
+        for index, item in enumerate(data):
+            if parent_id is None:
+                # Top-level list: each element is a root node
+                node_id = write_node_id(item, node_id, parent_id=None)
+            else:
+                # Child list: position is 1-based
+                child_id = f"{parent_id}.{index + 1}"
+                node_id = write_node_id(item, node_id, parent_id=child_id)
+
     return node_id
 
 def get_nodes(structure):
@@ -763,4 +791,3 @@ def print_tree(tree, indent=0):
 def print_wrapped(text, width=100):
     for line in text.splitlines():
         print(textwrap.fill(line, width=width))
-
