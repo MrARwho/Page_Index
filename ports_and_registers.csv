@@ -1,0 +1,6 @@
+Description,Direction,Name,Type,Width/Size
+Interface between the Protocol Layer and the Die-to-Die Adapter.,Inout,FDI (Flit-aware Die-to-Die interface),Port,Not specified
+Interface between the Die-to-Die Adapter and the Physical Layer.,Inout,RDI (raw Die-to-Die interface),Port,Not specified
+Identifier carried along with the Flit header for de-multiplexing of Flits on the Receiver.,N/A,stack identifier,Signal,1 bit
+Parameter negotiated to support multiplexing two protocol stacks on the same physical Link.,N/A,Multi_Protocol_Enable,Register,Not specified
+Parameter negotiated to support dynamic multiplexing between two stacks of the same or different protocols.,N/A,Enhanced Multi_Protocol_Enable,Register,Not specified
