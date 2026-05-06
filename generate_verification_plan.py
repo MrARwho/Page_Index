@@ -44,7 +44,7 @@ def run_llm_json(prompt, max_tokens=8000):
         temperature=0.0,
         max_tokens=max_tokens,
         extra_body={
-            "reasoning_budget": 1000,
+            "reasoning_budget": 2000,
             "reasoning_format": "none"
         }
     )
