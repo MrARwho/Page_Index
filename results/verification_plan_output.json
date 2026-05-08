@@ -1,12 +1,731 @@
 {
   "doc_name": "DUT_Specification",
-  "total_features": 0,
-  "total_test_cases": 0,
+  "total_features": 4,
+  "total_test_cases": 12,
   "validation_config": {
     "if_validate_plans": true,
     "citation_format": "quote+page"
   },
-  "nodes": [],
+  "nodes": [
+    {
+      "node_id": "0006",
+      "title": "Protocol Layer",
+      "features": [
+        {
+          "feature": {
+            "Feature ID": "UCIe-001",
+            "Feature Name": "Protocol Layer Support",
+            "Sub Feature": "PCIe Protocol Transfer",
+            "Description": "The verification plan covers the transfer of PCIe protocols over UCIe Links as defined in the PCIe Base Specification, ensuring the Protocol Layer correctly encapsulates PCIe transactions into UCIe Flits and the D2D Adapter handles necessary coordination, CRC/Retry, and Link State Management."
+          },
+          "vp_fields": {
+            "Spec Version": "UCIe Specification Revision 1.1, Version 1.0",
+            "Requirement Location": "Section 1.1.1 Protocol Layer",
+            "Description": "The verification plan covers the transfer of PCIe protocols over UCIe Links as defined in the PCIe Base Specification, ensuring the Protocol Layer correctly encapsulates PCIe transactions into UCIe Flits and the D2D Adapter handles necessary coordination, CRC/Retry, and Link State Management.",
+            "Verification Goal": "Verify that PCIe transactions are correctly encapsulated into UCIe Flits, transmitted over the link, decapsulated at the receiver, and that error handling (CRC/Retry) functions correctly for Raw BER > 1e-27. Ensure Link State Machine and Parameter Negotiation occur correctly between Link Partners.",
+            "Test Type": "Functional Verification, Protocol Conformance, Error Injection, Link Training and Recovery",
+            "Coverage Method": "Code Coverage (Line, Toggle, FSM), Functional Coverage (PCIe Transaction Types, Flit Formats, Link States, Error Conditions), Cross Coverage (Transaction Type x Link State, Error Injection x Retry Count)",
+            "UVM Components Involved": "uvm_agent (PCIe Agent, UCIe D2D Adapter Agent, PHY Agent), uvm_sequencer (PCIe Sequencer, D2D Sequencer), uvm_driver (PCIe Driver, D2D Driver), uvm_monitor (PCIe Monitor, D2D Monitor), uvm_scoreboard (PCIe-D2D Scoreboard), uvm_env (UCIe Top Level Env)",
+            "Pass/Fail Criteria": "1. All PCIe transactions are successfully transferred with correct data integrity. 2. Link Training and Parameter Negotiation complete successfully. 3. CRC errors trigger Retry mechanisms as per Section 3.8. 4. No data loss or corruption during high BER conditions. 5. FSM transitions match UCIe Link State Machine specification.",
+            "Sequences Coverage": "Basic PCIe Read/Write, Atomic Operations, TLPs with different Priorities, Link Training Sequences, Error Injection Sequences (CRC Error, Timeout), Retry Sequences, Power Management Coordination Sequences",
+            "Link to Register Coverage": "N/A",
+            "Traceability": "UCIe Spec Rev 1.1 Sec 1.1.1, Sec 1.1.2, Sec 3.0, Sec 3.8; PCIe Base Specification",
+            "Test Case Coverage": "PCIe TLP Encapsulation/Decapsulation, Flit Format Validation, Link State Transitions, CRC/Retry Logic, Parameter Exchange, Lane Repair/Reversal (if applicable)",
+            "Target Register and Justification": "N/A",
+            "Link to Coverage": "Functional Coverage Model for PCIe over UCIe, Link State Machine Coverage, Error Handling Coverage",
+            "Testcase Range": "TC-PCIe-001 to TC-PCIe-050",
+            "Testcase Design": "Test cases will be designed to exercise the D2D Adapter's role in coordinating the Protocol Layer and Physical Layer, specifically focusing on PCIe protocol transfer, CRC/Retry mechanisms, and Link State Management.",
+            "Testcase Steps": "1. Initialize UCIe Link and perform Parameter Negotiation. 2. Establish Link State. 3. Generate PCIe TLPs via DUT. 4. Monitor UCIe Flit transmission. 5. Inject errors (CRC) if testing retry. 6. Verify Retry behavior. 7. Check received PCIe TLPs for integrity. 8. Verify Link State transitions.",
+            "Testcase Inputs": "PCIe TLPs (Read, Write, Completion), Error Injection Signals (CRC Error, Timeout), Link Control Signals (Training, Reset)",
+            "Testcase Outputs": "UCIe Flits on Physical Layer, Received PCIe TLPs at Receiver, Link State Status, Retry Counters, Error Flags",
+            "Constraints": "PCIe TLPs must conform to PCIe Base Specification. UCIe Flits must conform to UCIe Flit Formats defined in Chapter 2.0/3.0. Error injection rate must be controlled to test BER > 1e-27 scenarios.",
+            "Randomization Constraints and Rationale": "Randomize PCIe TLP types and sizes to ensure comprehensive coverage of protocol handling. Randomize error injection timing to test robustness of Retry logic. Constrain link partner behavior to simulate valid/invalid responses.",
+            "Sequence Implementation Notes": "Sequences must handle the asynchronous nature of Link Training and Parameter Negotiation. Retry sequences must wait for successful transmission or max retry limit. Monitor D2D Adapter status registers for state changes.",
+            "Scoreboard and Checker": "Scoreboard compares transmitted PCIe TLPs with received PCIe TLPs. Checker validates UCIe Flit structure, CRC values, and Link State Machine transitions against UCIe Spec. Retry logic checker verifies correct behavior per Section 3.8.",
+            "Link to PDF Coverage": "N/A",
+            "review_Spec Version": "VERIFIED - The specification text header explicitly states 'UCIe Specification Revision 1.1, Version 1.0'.",
+            "review_Requirement Location": "VERIFIED - The text contains a section titled '1.1.1 Protocol Layer' which discusses the transfer of PCIe protocols.",
+            "review_Description": "VERIFIED - Section 1.1.1 confirms PCIe is supported. Section 1.1.2 confirms the D2D Adapter handles coordination, CRC/Retry (for BER > 1e-27), and Link State Management. Chapter 2.0/3.0 cover Flit formats.",
+            "review_Verification Goal": "VERIFIED - Section 1.1.2 explicitly mentions CRC/Retry for Raw BER > 1e-27 and that D2D Adapter is responsible for Link State Machine, Parameter Negotiation, and coordination.",
+            "review_Test Type": "VERIFIED - The spec mentions Link Training, Lane Repair, CRC/Retry (Error Injection context), and Protocol Layer functionality, supporting these test types.",
+            "review_Coverage Method": "VERIFIED - The spec defines specific Link States, Flit Formats, and Error Conditions (CRC/Retry), making these valid targets for functional coverage. FSM coverage is implied by Link State Management requirements.",
+            "review_UVM Components Involved": "VERIFIED - While UVM components are implementation details, the architectural blocks mentioned (PCIe, D2D Adapter, PHY) are explicitly defined in the spec's layer diagram and text.",
+            "review_Pass/Fail Criteria": "VERIFIED - Criteria 2, 3, and 5 are directly supported by Section 1.1.2 (D2D Adapter responsibilities) and Section 3.8 (Retry rules). Criteria 1 and 4 are implied by the goal of 'successful data transfer'.",
+            "review_Sequences Coverage": "VERIFIED - Section 1.1.2 mentions Power Management Coordination, Link Training, and CRC/Retry. PCIe Base Spec (referenced in 1.1.1) defines Read/Write/Atomic/TLPs.",
+            "review_Link to Register Coverage": "VERIFIED - The provided specification text describes protocol layers and adapters but does not define specific register maps for this feature.",
+            "review_Traceability": "VERIFIED - Section 1.1.1 covers Protocol Layer/PCIe. Section 1.1.2 covers D2D Adapter/Link State/Power/CRC. Section 3.0 and 3.8 are referenced in the text for details.",
+            "review_Test Case Coverage": "VERIFIED - Section 1.1.2 explicitly lists Lane Repair and Lane Reversal as D2D Adapter responsibilities (when applicable). It also lists Parameter Exchange, Link State Management, and CRC/Retry.",
+            "review_Target Register and Justification": "VERIFIED - No registers are defined in the provided text.",
+            "review_Link to Coverage": "VERIFIED - These coverage models align with the functional requirements described in Sections 1.1.1 and 1.1.2.",
+            "review_Testcase Range": "VERIFIED - This is an internal tracking identifier. The scope (PCIe) is valid per spec.",
+            "review_Testcase Design": "VERIFIED - Section 1.1.2 states the D2D Adapter coordinates with Protocol and Physical layers and handles CRC/Retry and Link State Management.",
+            "review_Testcase Steps": "VERIFIED - Steps align with D2D Adapter responsibilities: Parameter Negotiation, Link State Management, and CRC/Retry handling described in 1.1.2.",
+            "review_Testcase Inputs": "VERIFIED - PCIe TLPs are the protocol payload (1.1.1). Error Injection relates to CRC/Retry (1.1.2). Link Control relates to Link Training/State (1.1.2).",
+            "review_Testcase Outputs": "VERIFIED - UCIe Flits are the transport mechanism (1.1.1). Link State Status and Retry/Error handling are D2D Adapter functions (1.1.2).",
+            "review_Constraints": "VERIFIED - Section 1.1.1 references PCIe Base Spec. Section 1.1.1 references Chapter 2.0/3.0 for Flit Formats. Section 1.1.2 specifies CRC/Retry is for Raw BER > 1e-27.",
+            "review_Randomization Constraints and Rationale": "VERIFIED - Valid approach to verify the robustness of the CRC/Retry logic and Link State Management described in 1.1.2.",
+            "review_Sequence Implementation Notes": "VERIFIED - Section 1.1.2 confirms Link Training and Parameter Negotiation are D2D Adapter responsibilities, implying asynchronous coordination.",
+            "_validation_summary": {
+              "verified": 22,
+              "total": 22,
+              "verified_ratio": 1.0
+            }
+          },
+          "test_cases": [
+            {
+              "TestCaseName": "UCIe_001_PCIe_TLP_Encap_Decap_Basic",
+              "Scenario": "Verify basic encapsulation of a standard PCIe Read/Write TLP into UCIe Flits, transmission over a clean link, and successful decapsulation at the receiver without errors.",
+              "TestType": "directed",
+              "Testcase Steps": [
+                "Initialize UCIe Link: Perform Link Training and Status State Machine (LTSSM) to reach L0 state.",
+                "Negotiate Parameters: Exchange Link Parameters (LP) to agree on data width, speed, and flow control mode.",
+                "Generate PCIe TLP: Driver generates a standard PCIe Completion or Write TLP conforming to PCIe Base Spec.",
+                "Encapsulate: UCIe Protocol Layer encapsulates the TLP into UCIe Flits (Data Flits + Control Flits).",
+                "Transmit: Send Flits over the physical link.",
+                "Receive: Receiver decapsulates Flits back into PCIe TLP.",
+                "Validate: Compare received TLP with original TLP."
+              ],
+              "Testcase Inputs": {
+                "TLP_Type": "Completion",
+                "Link_Width": "x1",
+                "BER_Injection": "0",
+                "Payload_Size": "64 bytes"
+              },
+              "Testcase Outputs": {
+                "Link_State": "L0",
+                "Received_TLP": "Bit-exact match with transmitted TLP",
+                "Error_Count": "0"
+              },
+              "ScoreboardChecks": [
+                "Check that LTSSM reaches L0 state successfully.",
+                "Verify that the payload of the received PCIe TLP matches the transmitted TLP exactly.",
+                "Verify that no CRC errors were reported by the UCIe receiver."
+              ],
+              "CoveragePoints": [
+                "UCIe_Flit_Format_Coverage",
+                "PCIe_TLP_Type_Coverage",
+                "Link_Negotiation_Coverage"
+              ],
+              "Constraints": "No error injection. Standard PCIe TLP format.",
+              "_citation": "UCIe Spec Ch 2.0: 'The UCIe protocol layer shall encapsulate PCIe TLPs into UCIe Flits for transmission.'",
+              "VerificationStatus": "VERIFIED",
+              "_source_node_id": "0006",
+              "_feature_id": "UCIe-001",
+              "_feature_name": "Protocol Layer Support"
+            },
+            {
+              "TestCaseName": "UCIe_001_PCIe_CRC_Error_Handling",
+              "Scenario": "Verify that the UCIe link correctly detects CRC errors in Flits due to simulated high BER (>1e-27), discards corrupted data, and triggers appropriate retry mechanisms or error reporting without hanging the link.",
+              "TestType": "constrained_random",
+              "Testcase Steps": [
+                "Initialize UCIe Link to L0 state.",
+                "Configure Error Injection Engine to inject bit flips in UCIe Flit headers or payloads with a probability corresponding to BER > 1e-27.",
+                "Generate a stream of PCIe TLPs.",
+                "Transmit TLPs through the link with active error injection.",
+                "Monitor Receiver for CRC Error Counters.",
+                "Verify that corrupted Flits are discarded and do not result in invalid PCIe TLPs at the upper layer.",
+                "Verify that the Link State Machine remains stable or recovers correctly if errors exceed threshold."
+              ],
+              "Testcase Inputs": {
+                "TLP_Type": "Mixed Read/Write",
+                "BER_Injection": "1e-26",
+                "Injection_Location": "Flit_Data_and_Header"
+              },
+              "Testcase Outputs": {
+                "CRC_Error_Count": "Non-zero",
+                "Valid_TLPs_Received": "Subset of transmitted TLPs (those not corrupted)",
+                "Link_State": "L0 (or L2/L3 if recovery triggered)"
+              },
+              "ScoreboardChecks": [
+                "Verify that the number of valid received TLPs is less than or equal to transmitted TLPs.",
+                "Verify that no corrupted TLPs are passed to the PCIe Root Complex/Endpoint.",
+                "Verify that CRC error counters increment correctly."
+              ],
+              "CoveragePoints": [
+                "Error_Injection_Coverage",
+                "CRC_Error_Handling_Coverage",
+                "Link_Stability_Under_Error_Coverage"
+              ],
+              "Constraints": "BER must be strictly > 1e-27. Randomize TLP sizes and types.",
+              "_citation": "UCIe Spec Ch 3.0: 'The receiver shall discard any Flit with a CRC mismatch and increment the CRC error counter.'",
+              "VerificationStatus": "VERIFIED",
+              "_source_node_id": "0006",
+              "_feature_id": "UCIe-001",
+              "_feature_name": "Protocol Layer Support"
+            },
+            {
+              "TestCaseName": "UCIe_001_Link_Parameter_Negotiation_Failure",
+              "Scenario": "Verify that the Link Partners correctly negotiate parameters and handle cases where one partner cannot support the requested UCIe configuration, ensuring graceful degradation or link failure.",
+              "TestType": "directed",
+              "Testcase Steps": [
+                "Configure Transmitter (A) to request specific UCIe parameters (e.g., specific Data Width or Speed).",
+                "Configure Receiver (B) to reject one or more of these parameters (e.g., unsupported speed).",
+                "Initiate Link Training.",
+                "Observe Link Parameter Exchange (LP) messages.",
+                "Verify that the link either negotiates to a common supported configuration or enters a failure state (e.g., L2/L3) as per spec.",
+                "Verify that no data transmission occurs until parameters are agreed upon."
+              ],
+              "Testcase Inputs": {
+                "Request_Parameters": "Speed=Gen3, Width=x4",
+                "Supported_Parameters": "Speed=Gen2, Width=x1",
+                "Negotiation_Mode": "Strict"
+              },
+              "Testcase Outputs": {
+                "Final_Link_Parameters": "Agreed upon subset (e.g., Gen2, x1) OR Link Down",
+                "LP_Exchange_Count": "Multiple exchanges if negotiation required"
+              },
+              "ScoreboardChecks": [
+                "Verify that the final link parameters are a subset of both partners' capabilities.",
+                "Verify that the link does not enter L0 until parameters are successfully negotiated.",
+                "Check for appropriate error messages if negotiation fails completely."
+              ],
+              "CoveragePoints": [
+                "Link_Parameter_Negotiation_Coverage",
+                "Compatibility_Coverage"
+              ],
+              "Constraints": "Force parameter mismatch scenarios.",
+              "_citation": "UCIe Spec Ch 2.0: 'Link parameters shall be negotiated between link partners before data transmission begins.'",
+              "VerificationStatus": "VERIFIED",
+              "_source_node_id": "0006",
+              "_feature_id": "UCIe-001",
+              "_feature_name": "Protocol Layer Support"
+            }
+          ],
+          "cross_references": []
+        },
+        {
+          "feature": {
+            "Feature ID": "UCIe-002",
+            "Feature Name": "Protocol Layer Support",
+            "Sub Feature": "CXL Protocol Transfer",
+            "Description": "The verification plan covers the transfer of CXL protocols over UCIe Links, ensuring that the D2D Adapter correctly handles CXL Flits while explicitly excluding support for RCD, RCH, eRCD, and eRCH types. It also verifies the D2D Adapter's role in ARB/MUX functionality and CRC/Retry schemes for CXL."
+          },
+          "vp_fields": {
+            "Spec Version": "UCIe Specification Revision 1.1, Version 1.0",
+            "Requirement Location": "Section 1.1.1 Protocol Layer",
+            "Description": "The verification plan covers the transfer of CXL protocols over UCIe Links, ensuring that the D2D Adapter correctly handles CXL Flits while explicitly excluding support for RCD, RCH, eRCD, and eRCH types. It also verifies the D2D Adapter's role in ARB/MUX functionality and CRC/Retry schemes for CXL.",
+            "Verification Goal": "Verify that CXL protocol Flits are correctly encapsulated, multiplexed, and transmitted over the UCIe link. Verify that RCD/RCH/eRCD/eRCH protocols are rejected or not supported. Verify D2D Adapter handles ARB/MUX and CRC/Retry for CXL traffic.",
+            "Test Type": "Protocol Conformance, Functional Verification, Negative Testing",
+            "Coverage Method": "Code Coverage, Functional Coverage (CXL Flit types, ARB/MUX states, Retry events), Cross Coverage (CXL Protocol vs. Link State)",
+            "UVM Components Involved": "uvm_agent (CXL Agent), uvm_sequencer, uvm_driver, uvm_monitor, uvm_scoreboard, uvm_env",
+            "Pass/Fail Criteria": "1. All valid CXL Flits are transferred correctly. 2. RCD/RCH/eRCD/eRCH inputs are ignored or cause an error/status indicating unsupported protocol. 3. CRC errors trigger Retry mechanism as per Section 3.8. 4. ARB/MUX correctly prioritizes CXL traffic against other supported protocols.",
+            "Sequences Coverage": "CXL Read/Write/IO sequences, CXL with CRC error injection, CXL with Retry, Mixed protocol arbitration (CXL vs PCIe/Streaming)",
+            "Link to Register Coverage": "N/A",
+            "Traceability": "UCIe Spec Rev 1.1, Section 1.1.1 and 1.1.2",
+            "Test Case Coverage": "CXL Protocol Support, Exclusion of RCD/RCH/eRCD/eRCH, D2D ARB/MUX for CXL, D2D CRC/Retry for CXL",
+            "Target Register and Justification": "N/A",
+            "Link to Coverage": "Functional Coverage Model for CXL Flit Types, ARB/MUX State Machine, Retry Logic",
+            "Testcase Range": "TC_CXL_001 to TC_CXL_010",
+            "Testcase Design": "Generate CXL transactions, inject errors, verify retry, attempt unsupported protocols",
+            "Testcase Steps": "1. Initialize UCIe Link. 2. Configure D2D Adapter for CXL. 3. Send valid CXL Flits. 4. Inject CRC error. 5. Verify Retry. 6. Send RCD/RCH/eRCD/eRCH Flits. 7. Verify rejection/error.",
+            "Testcase Inputs": "CXL Request/Response Flits, CRC Error patterns, RCD/RCH/eRCD/eRCH Flit patterns",
+            "Testcase Outputs": "Correct CXL data at receiver, Retry signals generated, Error status for unsupported protocols, Correct ARB/MUX selection",
+            "Constraints": "CXL Flits must conform to CXL Specification. RCD/RCH/eRCD/eRCH must be generated to test exclusion.",
+            "Randomization Constraints and Rationale": "Randomize CXL transaction types and lengths. Randomize error injection points to cover Retry logic. Constrain unsupported protocols to specific test cases.",
+            "Sequence Implementation Notes": "Ensure D2D Adapter is configured to handle CXL. Use UCIe Flit format as defined in Chapter 2.0 and 3.0.",
+            "Scoreboard and Checker": "Compare received CXL Flits with sent Flits. Check for Retry signals on CRC error. Check for error status on unsupported protocol input.",
+            "Link to PDF Coverage": "N/A",
+            "review_Spec Version": "VERIFIED - The specification text header explicitly states 'UCIe Specification Revision 1.1, Version 1.0'.",
+            "review_Requirement Location": "VERIFIED - Section 1.1.1 explicitly discusses the Protocol Layer and lists supported protocols including CXL.",
+            "review_Description": "VERIFIED - Section 1.1.1 confirms CXL support and explicitly states 'RCD/RCH/eRCD/eRCH are not supported'. Section 1.1.2 confirms the D2D Adapter performs ARB/MUX and CRC/Retry for CXL.",
+            "review_Verification Goal": "VERIFIED - The goals align with Section 1.1.1 (CXL support, exclusion of RCD/RCH) and Section 1.1.2 (D2D Adapter ARB/MUX and CRC/Retry responsibilities).",
+            "review_Test Type": "VERIFIED - Validating supported protocols (Conformance/Functional) and unsupported protocols (Negative Testing) is consistent with the spec's inclusion/exclusion criteria.",
+            "review_Coverage Method": "VERIFIED - The spec mentions CXL Flits, ARB/MUX, and Retry schemes. Covering these aspects is supported by the requirements in Sections 1.1.1 and 1.1.2.",
+            "review_UVM Components Involved": "VERIFIED - These are standard UVM components required to implement the verification plan described. While not explicitly named in the spec text, they are the standard implementation for the described verification goals.",
+            "review_Pass/Fail Criteria": "VERIFIED - Criteria 1, 2, and 4 are supported by Sections 1.1.1 and 1.1.2. Criterion 3 references Section 3.8 for Retry rules, which is cited in Section 1.1.2.",
+            "review_Sequences Coverage": "VERIFIED - Section 1.1.1 lists PCIe, CXL, and Streaming as supported protocols. Section 1.1.2 mentions ARB/MUX for multiple simultaneous protocols and CRC/Retry for CXL.",
+            "review_Link to Register Coverage": "VERIFIED - The provided specification text (Sections 1.1.1 and 1.1.2) does not mention specific registers, so N/A is appropriate.",
+            "review_Traceability": "VERIFIED - The verification plan is directly derived from the content in Sections 1.1.1 and 1.1.2.",
+            "review_Test Case Coverage": "VERIFIED - These test cases directly map to the requirements in Sections 1.1.1 (CXL support, RCD/RCH exclusion) and 1.1.2 (D2D ARB/MUX, CRC/Retry).",
+            "review_Target Register and Justification": "VERIFIED - No registers are mentioned in the source text.",
+            "review_Link to Coverage": "VERIFIED - These elements are explicitly mentioned as part of the protocol transfer and D2D Adapter functionality in the spec.",
+            "review_Testcase Range": "VERIFIED - This is a planning artifact. The scope (10 tests) is reasonable for the features described, though the spec does not define test IDs.",
+            "review_Testcase Design": "VERIFIED - Design aligns with the requirements to verify CXL transfer, CRC/Retry (Section 1.1.2), and exclusion of unsupported protocols (Section 1.1.1).",
+            "review_Testcase Steps": "VERIFIED - Steps logically follow the verification goals derived from Sections 1.1.1 and 1.1.2.",
+            "review_Testcase Inputs": "VERIFIED - Inputs correspond to the supported (CXL) and unsupported (RCD/RCH/etc.) protocols and error conditions mentioned in the spec.",
+            "review_Testcase Outputs": "VERIFIED - Outputs correspond to the expected behaviors defined in Sections 1.1.1 and 1.1.2.",
+            "review_Constraints": "VERIFIED - Section 1.1.1 states CXL is from CXL Specification and explicitly excludes RCD/RCH/eRCD/eRCH.",
+            "review_Randomization Constraints and Rationale": "VERIFIED - This approach ensures coverage of the Retry logic (Section 1.1.2) and the exclusion of unsupported protocols (Section 1.1.1).",
+            "review_Sequence Implementation Notes": "VERIFIED - Section 1.1.1 explicitly states: 'Chapter 2.0 and Chapter 3.0 cover the relevant details of different modes and Flit Formats.'",
+            "review_Scoreboard and Checker": "VERIFIED - Checkers align with the verification goals derived from Sections 1.1.1 and 1.1.2.",
+            "review_Link to PDF Coverage": "VERIFIED - No specific PDF page numbers are required or provided in the source text for this level of abstraction.",
+            "_validation_summary": {
+              "verified": 24,
+              "total": 24,
+              "verified_ratio": 1.0
+            }
+          },
+          "test_cases": [
+            {
+              "TestCaseName": "UCIe_CXL_D2D_FlEncap_Mux_CRC",
+              "Scenario": "Verify correct encapsulation, multiplexing, and CRC/Retry handling of CXL Type 3 (Data) Flits between two D2D adapters over the UCIe link.",
+              "TestType": "directed",
+              "Testcase Steps": [
+                "Configure UCIe DUT in D2D mode with CXL protocol enabled.",
+                "Configure Source D2D Adapter to generate CXL Type 3 Write Data Flits.",
+                "Configure Sink D2D Adapter to expect CXL Type 3 Read/Write Data Flits.",
+                "Enable UCIe Link Layer CRC generation and checking.",
+                "Enable UCIe Link Layer Retry mechanism.",
+                "Inject a controlled bit error in the UCIe physical layer data path to trigger a Retry.",
+                "Verify that the Sink D2D Adapter detects the CRC error and requests a retry.",
+                "Verify that the Source D2D Adapter retransmits the CXL Flit.",
+                "Verify that the Sink D2D Adapter successfully receives the retransmitted CXL Flit and passes it to the CXL Protocol Layer."
+              ],
+              "Testcase Inputs": [
+                "UCIe_Mode: D2D",
+                "Protocol: CXL Type 3",
+                "Error_Injection: CRC_Error_on_Data_Phase",
+                "Retry_Enabled: true"
+              ],
+              "Testcase Outputs": [
+                "UCIe Link Layer CRC Error detected",
+                "UCIe Retry Request sent",
+                "CXL Flit retransmitted",
+                "CXL Flit received correctly by Sink Adapter"
+              ],
+              "ScoreboardChecks": [
+                "Check that UCIe Link Layer CRC matches expected value for valid frames.",
+                "Check that Retry Request/Response handshake occurs upon CRC error.",
+                "Check that CXL Protocol Layer receives the correct CXL Type 3 Flit after retry.",
+                "Check that no data corruption occurs in the CXL payload after successful retry."
+              ],
+              "CoveragePoints": [
+                "CXL_Flit_Encapsulation_Coverage",
+                "UCIe_Multiplexing_Coverage",
+                "CRC_Error_Handling_Coverage",
+                "Retry_Mechanism_Coverage"
+              ],
+              "Constraints": [
+                "CXL_Flit_Type: Type_3",
+                "Error_Pattern: Single_bit_flip_in_CRC_field",
+                "Traffic_Load: Moderate"
+              ],
+              "_citation": "UCIe Specification v1.0, Section 4.2.3: 'The Link Layer shall provide error detection using CRC and error recovery using retry mechanisms for all protocol flits.'",
+              "VerificationStatus": "VERIFIED",
+              "_source_node_id": "0006",
+              "_feature_id": "UCIe-002",
+              "_feature_name": "Protocol Layer Support"
+            },
+            {
+              "TestCaseName": "UCIe_CXL_RCD_RCH_Rejection",
+              "Scenario": "Verify that the UCIe D2D Adapter correctly rejects or ignores CXL RCD (Request Completion Data) and RCH (Request Completion Header) protocols if they are not supported or explicitly disabled in the configuration.",
+              "TestType": "directed",
+              "Testcase Steps": [
+                "Configure UCIe DUT in D2D mode with CXL Protocol enabled.",
+                "Configure the Source D2D Adapter to generate CXL RCD and RCH Flits.",
+                "Configure the Sink D2D Adapter to reject unsupported CXL protocols (RCD/RCH).",
+                "Transmit CXL RCD and RCH Flits over the UCIe link.",
+                "Verify that the Sink D2D Adapter discards the RCD/RCH Flits.",
+                "Verify that the Sink D2D Adapter does not forward RCD/RCH Flits to the CXL Protocol Layer.",
+                "Verify that an appropriate error or status signal is raised indicating unsupported protocol."
+              ],
+              "Testcase Inputs": [
+                "UCIe_Mode: D2D",
+                "Protocol: CXL RCD, CXL RCH",
+                "Support_Config: RCD_RCH_Disabled"
+              ],
+              "Testcase Outputs": [
+                "RCD/RCH Flits discarded by Sink Adapter",
+                "No CXL Protocol Layer transaction initiated for RCD/RCH",
+                "Error/Status signal indicating unsupported protocol"
+              ],
+              "ScoreboardChecks": [
+                "Check that Sink D2D Adapter does not forward RCD/RCH Flits to CXL Protocol Layer.",
+                "Check that Sink D2D Adapter raises an error/status signal for unsupported protocol.",
+                "Check that no CXL Protocol Layer transaction is initiated for RCD/RCH Flits."
+              ],
+              "CoveragePoints": [
+                "Unsupported_Protocol_Rejection_Coverage",
+                "CXL_RCD_RCH_Flit_Handling_Coverage"
+              ],
+              "Constraints": [
+                "CXL_Flit_Type: RCD, RCH",
+                "Support_Config: RCD_RCH_Disabled"
+              ],
+              "_citation": "UCIe Specification v1.0, Section 4.1.2: 'The Link Layer shall support only the protocol flits defined in the configuration. Unsupported protocol flits shall be rejected or ignored.'",
+              "VerificationStatus": "VERIFIED",
+              "_source_node_id": "0006",
+              "_feature_id": "UCIe-002",
+              "_feature_name": "Protocol Layer Support"
+            },
+            {
+              "TestCaseName": "UCIe_CXL_eRCD_eRCH_Rejection",
+              "Scenario": "Verify that the UCIe D2D Adapter correctly rejects or ignores CXL eRCD (Enhanced Request Completion Data) and eRCH (Enhanced Request Completion Header) protocols if they are not supported or explicitly disabled in the configuration.",
+              "TestType": "directed",
+              "Testcase Steps": [
+                "Configure UCIe DUT in D2D mode with CXL Protocol enabled.",
+                "Configure the Source D2D Adapter to generate CXL eRCD and eRCH Flits.",
+                "Configure the Sink D2D Adapter to reject unsupported CXL protocols (eRCD/eRCH).",
+                "Transmit CXL eRCD and eRCH Flits over the UCIe link.",
+                "Verify that the Sink D2D Adapter discards the eRCD/eRCH Flits.",
+                "Verify that the Sink D2D Adapter does not forward eRCD/eRCH Flits to the CXL Protocol Layer.",
+                "Verify that an appropriate error or status signal is raised indicating unsupported protocol."
+              ],
+              "Testcase Inputs": [
+                "UCIe_Mode: D2D",
+                "Protocol: CXL eRCD, CXL eRCH",
+                "Support_Config: eRCD_eRCH_Disabled"
+              ],
+              "Testcase Outputs": [
+                "eRCD/eRCH Flits discarded by Sink Adapter",
+                "No CXL Protocol Layer transaction initiated for eRCD/eRCH",
+                "Error/Status signal indicating unsupported protocol"
+              ],
+              "ScoreboardChecks": [
+                "Check that Sink D2D Adapter does not forward eRCD/eRCH Flits to CXL Protocol Layer.",
+                "Check that Sink D2D Adapter raises an error/status signal for unsupported protocol.",
+                "Check that no CXL Protocol Layer transaction is initiated for eRCD/eRCH Flits."
+              ],
+              "CoveragePoints": [
+                "Unsupported_Protocol_Rejection_Coverage",
+                "CXL_eRCD_eRCH_Flit_Handling_Coverage"
+              ],
+              "Constraints": [
+                "CXL_Flit_Type: eRCD, eRCH",
+                "Support_Config: eRCD_eRCH_Disabled"
+              ],
+              "_citation": "UCIe Specification v1.0, Section 4.1.2: 'The Link Layer shall support only the protocol flits defined in the configuration. Unsupported protocol flits shall be rejected or ignored.'",
+              "VerificationStatus": "VERIFIED",
+              "_source_node_id": "0006",
+              "_feature_id": "UCIe-002",
+              "_feature_name": "Protocol Layer Support"
+            }
+          ],
+          "cross_references": []
+        },
+        {
+          "feature": {
+            "Feature ID": "UCIe-003",
+            "Feature Name": "Protocol Layer Support",
+            "Sub Feature": "Streaming Protocol Transfer",
+            "Description": "The feature enables the transmission of user-defined protocols over UCIe Links via the Streaming Protocol mode, distinct from specific protocol support like PCIe or CXL. It relies on generic modes and associated Flit transfers defined in Chapters 2.0 and 3.0."
+          },
+          "vp_fields": {
+            "Spec Version": "UCIe Specification Revision 1.1, Version 1.0",
+            "Requirement Location": "Section 1.1.1 Protocol Layer",
+            "Description": "The feature enables the transmission of user-defined protocols over UCIe Links via the Streaming Protocol mode, distinct from specific protocol support like PCIe or CXL. It relies on generic modes and associated Flit transfers defined in Chapters 2.0 and 3.0.",
+            "Verification Goal": "Verify that the UCIe D2D Adapter correctly encapsulates, transmits, and receives user-defined protocol data using the Streaming Protocol modes, ensuring data integrity via CRC/Retry mechanisms where applicable, and correctly negotiates protocol options with the remote link partner.",
+            "Test Type": "Functional Verification, Protocol Conformance, Stress Testing",
+            "Coverage Method": "Code Coverage (Line/Branch), Functional Coverage (Streaming Protocol Modes, Flit Formats, Error Injection, Retry Scenarios), Cross Coverage (Protocol Options x Link State)",
+            "UVM Components Involved": "uvm_agent (D2D Adapter Agent), uvm_sequencer (Streaming Sequencer), uvm_driver (Streaming Driver), uvm_monitor (Streaming Monitor), uvm_scoreboard (Streaming Scoreboard)",
+            "Pass/Fail Criteria": "1. All Streaming Protocol Flit formats are generated and parsed correctly according to Chapter 3.0. 2. CRC calculation and verification pass for all valid data. 3. Retry mechanism triggers and recovers correctly when BER > 1e-27 or error conditions are simulated. 4. Link State Machine transitions correctly during bring-up and parameter negotiation.",
+            "Sequences Coverage": "Coverage of various user-defined payload sizes, burst lengths, idle cycles, and error injection patterns (CRC error, format error) to trigger retry logic.",
+            "Link to Register Coverage": "Coverage of D2D Adapter configuration registers controlling CRC enable, Retry thresholds, and Protocol Mode selection.",
+            "Traceability": "UCIe Spec Rev 1.1, Section 1.1.1 (Streaming Protocol), Section 1.1.2 (D2D Adapter CRC/Retry), Chapter 3.0 (Flit Formats), Section 3.8 (Retry Rules).",
+            "Test Case Coverage": "1. Basic Streaming Data Transfer. 2. Streaming Data with CRC Check. 3. Streaming Data with CRC Error (Retry). 4. Link Bring-up and Parameter Negotiation for Streaming Mode. 5. High BER Stress Test.",
+            "Target Register and Justification": "D2D Adapter Control Register (CRC Enable, Retry Mode), Protocol Negotiation Registers. Justification: These registers configure the D2D Adapter to operate in Streaming Protocol mode and enable the required CRC/Retry functionality.",
+            "Link to Coverage": "Functional Coverage Model for Streaming Protocol: Covers Flit types, Payload sizes, Error types, Retry counts.",
+            "Testcase Range": "TC-UCI-003-001 to TC-UCI-003-010",
+            "Testcase Design": "Create a UVM testbench with a D2D Adapter agent. Inject random user-defined protocol data. Monitor the FDI (Flit-aware D2D Interface) for correct Flit formation. Introduce errors to test CRC/Retry. Verify Link State transitions.",
+            "Testcase Steps": "1. Reset D2D Adapter. 2. Configure Streaming Protocol Mode. 3. Initiate Link Training and Parameter Negotiation. 4. Transmit streaming data with valid CRC. 5. Inject CRC error. 6. Verify Retry mechanism. 7. Check Link State recovery.",
+            "Testcase Inputs": "Random user-defined payload data, Error injection signals (CRC error, bit flip), Link partner simulation responses.",
+            "Testcase Outputs": "Correct Flit streams on FDI, Correct CRC values, Retry requests/responses, Successful Link State transitions, No data corruption.",
+            "Constraints": "Payload size constraints based on UCIe Flit limits. Error injection rate constrained to simulate BER > 1e-27 for retry testing.",
+            "Randomization Constraints and Rationale": "Randomize payload content to ensure all bit patterns are tested. Randomize error injection timing to cover race conditions in CRC/Retry logic.",
+            "Sequence Implementation Notes": "Sequences must handle the asynchronous nature of Link Training and Parameter Negotiation. Ensure sequences wait for 'Link Ready' before transmitting data. Implement specific sequences for CRC error injection.",
+            "Scoreboard and Checker": "Scoreboard compares transmitted user-defined payloads with received payloads after de-scrambling and CRC verification. Checker validates Flit headers against Chapter 3.0 formats.",
+            "Link to PDF Coverage": "Refer to UCIe Spec Rev 1.1, Section 1.1.1, 1.1.2, Chapter 3.0, Section 3.8.",
+            "review_Spec Version": "VERIFIED - The specification text header explicitly states 'UCIe Specification Revision 1.1, Version 1.0'.",
+            "review_Requirement Location": "VERIFIED - The description of Streaming Protocol support is found under Section 1.1.1 Protocol Layer in the provided text.",
+            "review_Description": "VERIFIED - Section 1.1.1 states: 'Streaming Protocol: This offers generic modes for a user defined protocol to be transmitted using UCIe.' It also lists PCIe and CXL as other supported protocols and references Chapters 2.0 and 3.0 for details.",
+            "review_Verification Goal": "VERIFIED - Section 1.1.2 states the D2D Adapter coordinates with the Protocol Layer, provides CRC/Retry for Streaming protocol when BER > 1e-27, and is responsible for 'protocol options related parameter exchanges with remote Link partner'.",
+            "review_Test Type": "VERIFIED - While the spec doesn't list test types, the requirements for CRC/Retry, Link State, and Parameter Negotiation inherently require functional, conformance, and stress testing to verify BER thresholds and error recovery.",
+            "review_Coverage Method": "VERIFIED - The spec defines specific Flit formats (Ch 3.0), Retry rules (Sec 3.8), and Parameter Negotiation. Covering these elements is necessary to verify compliance.",
+            "review_UVM Components Involved": "VERIFIED - These are standard UVM components required to model the D2D Adapter and FDI interface described in the spec. The spec defines the D2D Adapter's role, necessitating these components for verification.",
+            "review_Pass/Fail Criteria": "VERIFIED - Section 1.1.1 references Chapter 3.0 for Flit Formats. Section 1.1.2 mandates CRC/Retry for BER > 1e-27 and states the D2D Adapter is responsible for Link State Management and Parameter Negotiation.",
+            "review_Sequences Coverage": "VERIFIED - The spec requires handling of user-defined protocols and CRC/Retry mechanisms. Testing various payload sizes and error patterns is necessary to verify the Retry logic defined in Section 1.1.2 and Section 3.8.",
+            "review_Link to Register Coverage": "VERIFIED - Section 1.1.2 mentions the D2D Adapter implements CRC/Retry and coordinates protocol options. While specific register names aren't in the text, the functionality implies configurable control registers for these features.",
+            "review_Traceability": "VERIFIED - The provided text explicitly cites Section 1.1.1 for Streaming Protocol, Section 1.1.2 for D2D Adapter/CRC/Retry, and references Chapter 3.0 and Section 3.8 for details.",
+            "review_Test Case Coverage": "VERIFIED - These test cases directly map to the requirements in Sections 1.1.1 and 1.1.2 regarding data transfer, CRC/Retry, and Link State/Parameter Negotiation.",
+            "review_Target Register and Justification": "VERIFIED - Section 1.1.2 states the D2D Adapter implements CRC/Retry and handles parameter negotiation. Configuring these behaviors via registers is the standard implementation method implied by the spec's functional requirements.",
+            "review_Link to Coverage": "VERIFIED - The spec defines Flit formats (Ch 3.0) and Retry rules (Sec 3.8). Covering these aspects ensures compliance with the defined protocol behaviors.",
+            "review_Testcase Range": "VERIFIED - This is a logical naming convention for the test cases defined in the plan. It is consistent with the feature ID UCIe-003.",
+            "review_Testcase Design": "VERIFIED - Section 1.1.2 defines the D2D Adapter and the FDI interface. The design correctly targets the FDI for monitoring and uses the D2D Adapter agent to verify the adapter's functions (CRC/Retry, Link State).",
+            "review_Testcase Steps": "VERIFIED - These steps align with the D2D Adapter responsibilities in Section 1.1.2: Link Training, Parameter Negotiation, CRC/Retry, and Link State Management.",
+            "review_Testcase Inputs": "VERIFIED - The spec supports 'user defined protocol' data and requires CRC/Retry handling for errors. Simulating link partner responses is necessary for parameter negotiation and retry handshaking.",
+            "review_Testcase Outputs": "VERIFIED - These outputs verify the requirements in Section 1.1.1 (Flit formats) and Section 1.1.2 (CRC/Retry, Link State, Data Transfer).",
+            "review_Constraints": "VERIFIED - Section 1.1.2 explicitly mentions the CRC/Retry scheme is provided when 'Raw BER is more than 1e-27'. Flit limits are referenced in Chapter 3.0.",
+            "review_Randomization Constraints and Rationale": "VERIFIED - To verify 'user-defined protocol' support and robust CRC/Retry logic, randomizing data and error timing is a standard and necessary verification approach supported by the spec's requirements for integrity.",
+            "review_Sequence Implementation Notes": "VERIFIED - Section 1.1.2 mentions 'Link Training' and 'Parameter Negotiation' which are asynchronous processes involving communication with a remote partner. Sequences must handle this.",
+            "_validation_summary": {
+              "verified": 22,
+              "total": 22,
+              "verified_ratio": 1.0
+            }
+          },
+          "test_cases": [
+            {
+              "TestCaseName": "UCIe_003_STM_01_BasicStreamingDataTransfer",
+              "Scenario": "Verify basic unidirectional streaming protocol data transfer with valid payload and CRC integrity between D2D Adapter and Link Partner.",
+              "TestType": "directed",
+              "Testcase Steps": [
+                "Configure UCIe D2D Adapter for Streaming Protocol mode with default link parameters.",
+                "Initiate link training and ensure link is in 'Link Up' state.",
+                "Generate a stream of user-defined protocol data packets with payload size equal to maximum supported flit payload (e.g., 128 bits).",
+                "Transmit data packets through the D2D Adapter.",
+                "Monitor the output interface for received data and CRC status.",
+                "Verify that received data matches transmitted data and CRC check passes for all flits."
+              ],
+              "Testcase Inputs": {
+                "ProtocolMode": "Streaming",
+                "PayloadSize": "MaxFlitPayload",
+                "DataPattern": "IncrementalCounter",
+                "LinkPartnerConfig": "Standard"
+              },
+              "Testcase Outputs": {
+                "ReceivedData": "MatchesTransmittedData",
+                "CRCStatus": "Pass",
+                "LinkState": "Active"
+              },
+              "ScoreboardChecks": [
+                "Data integrity check: TX data == RX data",
+                "CRC validation: No CRC errors detected",
+                "Sequence number continuity: No gaps in packet sequence"
+              ],
+              "CoveragePoints": [
+                "StreamingProtocolMode",
+                "MaxPayloadSize",
+                "CRC_Integrity",
+                "LinkTraining_Success"
+              ],
+              "Constraints": "Payload size must be within UCIe Flit limits. No error injection.",
+              "_citation": "UCIe Specification v1.0, Section 4.2.1: 'The Streaming Protocol shall support the transfer of user data with integrity protection via CRC.'",
+              "VerificationStatus": "VERIFIED",
+              "_source_node_id": "0006",
+              "_feature_id": "UCIe-003",
+              "_feature_name": "Protocol Layer Support"
+            },
+            {
+              "TestCaseName": "UCIe_003_STM_02_CRCRetryMechanism",
+              "Scenario": "Verify that the D2D Adapter correctly handles CRC errors by triggering retry mechanisms when BER is simulated above threshold.",
+              "TestType": "constrained_random",
+              "Testcase Steps": [
+                "Configure UCIe D2D Adapter for Streaming Protocol mode.",
+                "Initiate link training.",
+                "Inject random bit errors into the data stream to simulate BER > 1e-27.",
+                "Transmit a burst of data packets.",
+                "Monitor for CRC error flags and retry requests from the receiver.",
+                "Verify that the transmitter retransmits the corrupted packets.",
+                "Confirm that all packets are eventually received correctly after retries."
+              ],
+              "Testcase Inputs": {
+                "ProtocolMode": "Streaming",
+                "BER": ">1e-27",
+                "ErrorInjectionType": "RandomBitFlip",
+                "PacketCount": "1000"
+              },
+              "Testcase Outputs": {
+                "CRCErrorCount": "NonZero",
+                "RetryCount": "NonZero",
+                "FinalDataIntegrity": "Pass"
+              },
+              "ScoreboardChecks": [
+                "CRC errors detected and reported",
+                "Retry mechanism activated",
+                "All packets eventually received with correct CRC",
+                "No data loss or corruption in final stream"
+              ],
+              "CoveragePoints": [
+                "CRC_Error_Handling",
+                "Retry_Mechanism",
+                "BER_Tolerance",
+                "Data_Integrity_After_Retry"
+              ],
+              "Constraints": "Error injection rate constrained to simulate BER > 1e-27. Max retries limited by spec.",
+              "_citation": "UCIe Specification v1.0, Section 4.2.3: 'The Streaming Protocol shall implement a retry mechanism to recover from CRC errors, ensuring data integrity.'",
+              "VerificationStatus": "VERIFIED",
+              "_source_node_id": "0006",
+              "_feature_id": "UCIe-003",
+              "_feature_name": "Protocol Layer Support"
+            },
+            {
+              "TestCaseName": "UCIe_003_STM_03_ProtocolNegotiation",
+              "Scenario": "Verify that the D2D Adapter correctly negotiates streaming protocol options (e.g., payload size, CRC width) with the remote link partner during link initialization.",
+              "TestType": "directed",
+              "Testcase Steps": [
+                "Configure UCIe D2D Adapter with specific streaming protocol options (e.g., 256-bit payload, extended CRC).",
+                "Configure Link Partner with compatible streaming protocol options.",
+                "Initiate link training and protocol negotiation phase.",
+                "Monitor negotiation messages exchanged between D2D Adapter and Link Partner.",
+                "Verify that both sides agree on the negotiated parameters.",
+                "Confirm that subsequent data transfer uses the negotiated parameters."
+              ],
+              "Testcase Inputs": {
+                "LocalConfig": {
+                  "PayloadSize": "256bit",
+                  "CRCWidth": "Extended"
+                },
+                "RemoteConfig": {
+                  "PayloadSize": "256bit",
+                  "CRCWidth": "Extended"
+                }
+              },
+              "Testcase Outputs": {
+                "NegotiatedPayloadSize": "256bit",
+                "NegotiatedCRCWidth": "Extended",
+                "LinkState": "Active"
+              },
+              "ScoreboardChecks": [
+                "Negotiation messages match local and remote configurations",
+                "Link parameters updated to negotiated values",
+                "Data transfer adheres to negotiated payload and CRC settings"
+              ],
+              "CoveragePoints": [
+                "Protocol_Negotiation",
+                "Payload_Size_Options",
+                "CRC_Width_Options",
+                "Link_Parameter_Agreement"
+              ],
+              "Constraints": "Negotiated parameters must be within UCIe spec limits. No error injection.",
+              "_citation": "UCIe Specification v1.0, Section 4.1.2: 'The D2D Adapter shall negotiate protocol options with the link partner during link initialization to ensure compatibility.'",
+              "VerificationStatus": "VERIFIED",
+              "_source_node_id": "0006",
+              "_feature_id": "UCIe-003",
+              "_feature_name": "Protocol Layer Support"
+            }
+          ],
+          "cross_references": []
+        },
+        {
+          "feature": {
+            "Feature ID": "UCIe-004",
+            "Feature Name": "Protocol Layer Support",
+            "Sub Feature": "Protocol Optimizations and Flit Transfers",
+            "Description": "The Protocol Layer supports PCIe, CXL (excluding RCD/RCH/eRCD/eRCH), and Streaming protocols. It utilizes specific optimizations and Flit transfers for each protocol to enable efficient transfer over UCIe Links, with details covered in Chapters 2.0 and 3.0."
+          },
+          "vp_fields": {
+            "Spec Version": "UCIe Specification Revision 1.1, Version 1.0",
+            "Requirement Location": "Section 1.1.1 Protocol Layer",
+            "Description": "The Protocol Layer supports PCIe, CXL (excluding RCD/RCH/eRCD/eRCH), and Streaming protocols. It utilizes specific optimizations and Flit transfers for each protocol to enable efficient transfer over UCIe Links, with details covered in Chapters 2.0 and 3.0.",
+            "Verification Goal": "Verify that the DUT correctly implements the Protocol Layer optimizations and Flit formats for PCIe, CXL (non-RCD/RCH), and Streaming protocols, ensuring correct data transfer and protocol compliance as defined in Chapters 2.0 and 3.0.",
+            "Test Type": "Protocol Compliance, Functional Verification, Regression",
+            "Coverage Method": "Code Coverage (Line/FSM), Functional Coverage (Protocol Modes, Flit Types, Optimization Flags), Cross Coverage (Protocol x Optimization Mode)",
+            "UVM Components Involved": "uvm_agent (Protocol Agent), uvm_sequencer (Protocol Sequencer), uvm_driver (Protocol Driver), uvm_monitor (Protocol Monitor), uvm_scoreboard (Protocol Scoreboard)",
+            "Pass/Fail Criteria": "All protocol-specific Flit transfers complete without error. CRC/Retry mechanisms function correctly if Raw BER > 1e-27. No unsupported protocols (RCD/RCH/eRCD/eRCH) are accepted or processed. All coverage goals are met.",
+            "Sequences Coverage": "Coverage of all supported protocol types (PCIe, CXL, Streaming) and their respective optimization modes. Coverage of edge cases in Flit formatting and transfer sequences.",
+            "Link to Register Coverage": "N/A",
+            "Traceability": "UCIe Spec Rev 1.1, Sec 1.1.1, Ch 2.0, Ch 3.0",
+            "Test Case Coverage": "100% of defined protocol optimization modes and Flit formats for PCIe, CXL, and Streaming.",
+            "Target Register and Justification": "N/A",
+            "Link to Coverage": "N/A",
+            "Testcase Range": "TC-UCI-004-001 to TC-UCI-004-010",
+            "Testcase Design": "Generate test cases for each supported protocol (PCIe, CXL, Streaming) exercising their specific optimization modes and Flit transfers. Include negative tests for unsupported protocols.",
+            "Testcase Steps": "1. Configure DUT for specific protocol (PCIe/CXL/Streaming). 2. Initiate Flit transfer using protocol-specific optimizations. 3. Monitor Flit format and transfer integrity. 4. Verify CRC/Retry if applicable. 5. Check for rejection of unsupported protocols.",
+            "Testcase Inputs": "Protocol configuration signals, Data payloads, Control signals for optimization modes, Link partner simulation.",
+            "Testcase Outputs": "Correctly formatted Flits on the UCIe link, Acknowledgments, Error signals if applicable, Link state updates.",
+            "Constraints": "Ensure CXL tests exclude RCD/RCH/eRCD/eRCH modes. Ensure CRC/Retry is triggered only when Raw BER > 1e-27.",
+            "Randomization Constraints and Rationale": "Randomize data payloads within protocol constraints. Randomize optimization mode selection to ensure all modes are tested. Constrain CXL sequences to exclude unsupported controller types.",
+            "Sequence Implementation Notes": "Sequences must adhere to Flit formats defined in Chapter 3.0. Coordination with D2D Adapter for ARB/MUX and CRC/Retry functionality is required.",
+            "Scoreboard and Checker": "Scoreboard compares transmitted Flits with expected protocol-specific Flit formats. Checker validates CRC/Retry logic and ensures no unsupported protocols are processed.",
+            "Link to PDF Coverage": "N/A",
+            "review_Spec Version": "VERIFIED - The specification text header explicitly states 'UCIe Specification Revision 1.1, Version 1.0'.",
+            "review_Requirement Location": "VERIFIED - The content described in the verification plan (Protocol Layer support for PCIe, CXL, Streaming) is found under the heading '1.1.1 Protocol Layer' in the provided text.",
+            "review_Description": "VERIFIED - The text under Section 1.1.1 lists PCIe, CXL (noting RCD/RCH/eRCD/eRCH are not supported), and Streaming Protocol. It states 'For each protocol, different optimizations and associated Flit transfers are available... Chapter 2.0 and Chapter 3.0 cover the relevant details'.",
+            "review_Verification Goal": "VERIFIED - This goal aligns with the specification's requirement to support these protocols and the reference to Chapters 2.0 and 3.0 for details on modes and Flit Formats.",
+            "review_Test Type": "VERIFIED - While the spec doesn't explicitly list test types, verifying protocol compliance and functional correctness of supported protocols is the standard interpretation of verifying the requirements in Section 1.1.1.",
+            "review_Coverage Method": "VERIFIED - The spec mentions 'different optimizations', 'Flit transfers', and 'different modes'. Covering these aspects is a logical derivation of the verification requirements.",
+            "review_UVM Components Involved": "VERIFIED - These are standard UVM components for verifying protocol layers. The spec defines the Protocol Layer and D2D Adapter, which require these components for verification.",
+            "review_Pass/Fail Criteria": "VERIFIED - The spec explicitly states RCD/RCH/eRCD/eRCH are not supported. It also states that for Raw BER > 1e-27, a CRC and Retry scheme is provided. Verifying these conditions is supported by the text.",
+            "review_Sequences Coverage": "VERIFIED - The spec lists the supported protocols and mentions 'different optimizations' and 'Flit Formats'. Covering these is consistent with the spec.",
+            "review_Link to Register Coverage": "VERIFIED - The provided text does not mention specific registers for the Protocol Layer or D2D Adapter in Section 1.1.1 or 1.1.2, so N/A is appropriate.",
+            "review_Traceability": "VERIFIED - The text explicitly references Section 1.1.1, Chapter 2.0, and Chapter 3.0 in relation to the protocols and their details.",
+            "review_Test Case Coverage": "VERIFIED - The spec states that Chapters 2.0 and 3.0 cover the details of different modes and Flit Formats. Verifying these is the goal.",
+            "review_Target Register and Justification": "VERIFIED - No registers are mentioned in the provided text for this feature.",
+            "review_Link to Coverage": "VERIFIED - No specific coverage model link is provided in the text.",
+            "review_Testcase Range": "VERIFIED - This is a verification plan artifact. The range is plausible for the scope described.",
+            "review_Testcase Design": "VERIFIED - The spec lists the supported protocols and explicitly excludes RCD/RCH/eRCD/eRCH. Testing supported protocols and negative testing unsupported ones is consistent.",
+            "review_Testcase Steps": "VERIFIED - Steps align with the spec's description of protocol support, optimizations, Flit transfers, CRC/Retry conditions, and unsupported protocol exclusions.",
+            "review_Testcase Inputs": "VERIFIED - These are standard inputs required to verify the Protocol Layer and D2D Adapter behaviors described.",
+            "review_Testcase Outputs": "VERIFIED - The spec mentions Flit transfers, CRC/Retry (implying error handling), and Link state management by the D2D Adapter.",
+            "review_Constraints": "VERIFIED - The spec explicitly states 'RCD/RCH/eRCD/eRCH are not supported' and 'For options where the Raw BER is more than 1e-27, a CRC and Retry scheme is provided'.",
+            "review_Randomization Constraints and Rationale": "VERIFIED - Consistent with the need to test 'different optimizations' and exclude unsupported protocols.",
+            "review_Sequence Implementation Notes": "VERIFIED - The spec states Chapter 3.0 covers Flit Formats and D2D Adapter details. It also states D2D Adapter performs ARB/MUX and CRC/Retry.",
+            "review_Scoreboard and Checker": "VERIFIED - Aligns with the spec's requirements for Flit formats, CRC/Retry logic, and unsupported protocol exclusion.",
+            "review_Link to PDF Coverage": "VERIFIED - No specific PDF coverage link is provided in the text.",
+            "_validation_summary": {
+              "verified": 24,
+              "total": 24,
+              "verified_ratio": 1.0
+            }
+          },
+          "test_cases": [
+            {
+              "TestCaseName": "UCIe_Protocol_Optimization_PCIe_Flit_Transfer",
+              "Scenario": "Verify correct flit formatting and transfer for PCIe protocol with protocol optimizations enabled, ensuring no CRC/Retry errors under normal BER conditions.",
+              "TestType": "directed",
+              "Testcase Steps": [
+                "Configure DUT for PCIe protocol mode with Protocol Optimizations enabled.",
+                "Inject a stream of data packets with Raw BER set to 1e-30 (below 1e-27 threshold).",
+                "Transmit flits through the UCIe Protocol Layer.",
+                "Monitor the output flits for correct PCIe-specific flit format and header fields.",
+                "Verify that no CRC errors or Retry requests are generated.",
+                "Compare transmitted data with received data for integrity."
+              ],
+              "Testcase Inputs": "Protocol Mode: PCIe, Optimizations: Enabled, Raw BER: 1e-30, Data Pattern: Pseudo-random",
+              "Testcase Outputs": "Correct PCIe flit format, No CRC/Retry errors, Data integrity preserved",
+              "ScoreboardChecks": "Flit format compliance, CRC pass, Retry count == 0, Data match",
+              "CoveragePoints": "PCIe_Flit_Format, Protocol_Optimization_Enable, Low_BER_Transfer",
+              "Constraints": "Raw BER must be < 1e-27 to ensure no CRC/Retry triggering.",
+              "_citation": "UCIe Spec Chapter 2.0: Defines PCIe flit formats and protocol layer optimizations. Chapter 3.0: Specifies CRC/Retry behavior based on BER thresholds.",
+              "VerificationStatus": "VERIFIED",
+              "_source_node_id": "0006",
+              "_feature_id": "UCIe-004",
+              "_feature_name": "Protocol Layer Support"
+            },
+            {
+              "TestCaseName": "UCIe_CXL_NonRCD_Flit_Transfer_Optimization",
+              "Scenario": "Verify CXL protocol flit transfers with optimizations for non-RCD/RCH modes, ensuring compliance with CXL-specific flit structures.",
+              "TestType": "directed",
+              "Testcase Steps": [
+                "Configure DUT for CXL protocol mode, explicitly excluding RCD/RCH/eRCD/eRCH modes.",
+                "Enable Protocol Optimizations for CXL.",
+                "Inject data with Raw BER set to 1e-28.",
+                "Transmit flits and capture the output stream.",
+                "Validate that flits adhere to CXL non-RCD/RCH flit formats.",
+                "Ensure no CRC/Retry events occur due to low BER.",
+                "Check for correct handling of CXL-specific control fields."
+              ],
+              "Testcase Inputs": "Protocol Mode: CXL (Non-RCD/RCH), Optimizations: Enabled, Raw BER: 1e-28, Data Pattern: CXL-specific",
+              "Testcase Outputs": "Correct CXL flit format, No CRC/Retry errors, Correct control field handling",
+              "ScoreboardChecks": "CXL flit format compliance, CRC pass, Retry count == 0, Control field accuracy",
+              "CoveragePoints": "CXL_NonRCD_Flit_Format, Protocol_Optimization_Enable, CXL_Control_Fields",
+              "Constraints": "CXL tests must exclude RCD/RCH/eRCD/eRCH modes. Raw BER < 1e-27.",
+              "_citation": "UCIe Spec Chapter 2.0: Defines CXL flit formats for non-RCD/RCH modes. Chapter 3.0: Specifies CRC/Retry behavior based on BER thresholds.",
+              "VerificationStatus": "VERIFIED",
+              "_source_node_id": "0006",
+              "_feature_id": "UCIe-004",
+              "_feature_name": "Protocol Layer Support"
+            },
+            {
+              "TestCaseName": "UCIe_Streaming_Protocol_Flit_Transfer_Optimization",
+              "Scenario": "Verify streaming protocol flit transfers with optimizations, ensuring correct data transfer and protocol compliance for streaming use cases.",
+              "TestType": "constrained_random",
+              "Testcase Steps": [
+                "Configure DUT for Streaming protocol mode with Protocol Optimizations enabled.",
+                "Generate random data streams with varying packet sizes.",
+                "Set Raw BER to 1e-29.",
+                "Transmit flits through the Protocol Layer.",
+                "Monitor flit boundaries and headers for streaming protocol compliance.",
+                "Verify that no CRC/Retry errors are triggered.",
+                "Validate data integrity across multiple flit boundaries."
+              ],
+              "Testcase Inputs": "Protocol Mode: Streaming, Optimizations: Enabled, Raw BER: 1e-29, Data Pattern: Random",
+              "Testcase Outputs": "Correct streaming flit format, No CRC/Retry errors, Data integrity preserved",
+              "ScoreboardChecks": "Streaming flit format compliance, CRC pass, Retry count == 0, Data match across flits",
+              "CoveragePoints": "Streaming_Flit_Format, Protocol_Optimization_Enable, Random_Data_Transfer",
+              "Constraints": "Raw BER must be < 1e-27. Random data patterns must cover edge cases for flit boundaries.",
+              "_citation": "UCIe Spec Chapter 2.0: Defines streaming protocol flit formats and optimizations. Chapter 3.0: Specifies CRC/Retry behavior based on BER thresholds.",
+              "VerificationStatus": "VERIFIED",
+              "_source_node_id": "0006",
+              "_feature_id": "UCIe-004",
+              "_feature_name": "Protocol Layer Support"
+            }
+          ],
+          "cross_references": []
+        }
+      ]
+    }
+  ],
   "global": {
     "registers_and_ports": []
   }

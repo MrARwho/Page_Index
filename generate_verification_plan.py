@@ -89,17 +89,6 @@ def clean_json_response(response_text):
     if match:
         response_text = match.group(1)
     
-    # Find the outermost JSON array or object
-    start_idx = response_text.find('[')
-    if start_idx == -1:
-        start_idx = response_text.find('{')
-    end_idx = response_text.rfind(']')
-    if end_idx == -1:
-        end_idx = response_text.rfind('}')
-        
-    if start_idx != -1 and end_idx != -1:
-        response_text = response_text[start_idx:end_idx+1]
-    
     # Escape literal newlines/carriage-returns inside JSON strings
     response_text = _escape_newlines_in_strings(response_text)
     
@@ -113,15 +102,78 @@ def clean_json_response(response_text):
     return response_text.strip()
 
 
-def run_llm_json(prompt, max_tokens=8000, temperature=0.0, extra_kwargs=None):
+def _merge_objects_if_fragmented(objs):
+    """If multiple objects have non-overlapping keys (LLM emitted field-by-field), merge them."""
+    if not isinstance(objs, list) or len(objs) < 2:
+        return objs
+    all_keys = set()
+    for obj in objs:
+        if isinstance(obj, dict):
+            all_keys.update(obj.keys())
+    # Heuristic: if total unique keys >= 10 and no object has more than 4 keys,
+    # assume fragmented output and merge everything.
+    max_keys_in_any = max((len(o) for o in objs if isinstance(o, dict)), default=0)
+    if len(all_keys) >= 10 and max_keys_in_any <= 4:
+        merged = {}
+        for obj in objs:
+            if isinstance(obj, dict):
+                merged.update(obj)
+        return merged
+    return objs
+
+
+def extract_json_objects(text):
+    """Extract all JSON objects or arrays from text, handling concatenated outputs."""
+    cleaned = clean_json_response(text)
+    
+    # Try parsing as-is first
+    try:
+        return json.loads(cleaned)
+    except json.JSONDecodeError:
+        pass
+    
+    # Try extracting all JSON objects/arrays using bracket matching
+    # Only extract top-level objects (depth 0), skip nested ones
+    objects = []
+    i = 0
+    while i < len(cleaned):
+        if cleaned[i] in ('{', '['):
+            start = i
+            depth = 0
+            for j in range(i, len(cleaned)):
+                if cleaned[j] in ('{', '['):
+                    depth += 1
+                elif cleaned[j] in ('}', ']'):
+                    depth -= 1
+                    if depth == 0:
+                        obj_str = cleaned[start:j+1]
+                        try:
+                            obj = json.loads(obj_str)
+                            objects.append(obj)
+                        except json.JSONDecodeError:
+                            pass
+                        i = j + 1
+                        break
+        i += 1
+    
+    if len(objects) == 1:
+        return objects[0]
+    elif len(objects) > 1:
+        result = _merge_objects_if_fragmented(objects)
+        if result is not objects:
+            return result
+        return objects
+    return None
+
+
+def run_llm_json(prompt, max_tokens=8000, temperature=0.0, extra_kwargs=None, single=False):
     kwargs = {
         "model": MODEL,
         "messages": [{"role": "user", "content": prompt}],
         "temperature": temperature,
         "max_tokens": max_tokens,
         "extra_body": {
-            "reasoning_budget": 2000,
-            "reasoning_format": "none"
+            "chat_template_kwargs": {"enable_thinking": False}
         }
     }
     if extra_kwargs:
@@ -129,13 +181,17 @@ def run_llm_json(prompt, max_tokens=8000, temperature=0.0, extra_kwargs=None):
     
     response = litellm.completion(**kwargs)
     raw_content = response.choices[0].message.content.strip()
-    cleaned = clean_json_response(raw_content)
-    try:
-        return json.loads(cleaned)
-    except json.JSONDecodeError as e:
-        print(f"  [WARN] Failed to decode JSON: {e}")
+    result = extract_json_objects(raw_content)
+    if result is None:
+        print(f"  [WARN] Failed to extract JSON from LLM output")
         print(f"  [RAW] {raw_content[:500]}")
         return None
+    if single and isinstance(result, list):
+        for item in result:
+            if isinstance(item, dict):
+                return item
+        return result[0] if result else None
+    return result
 
 
 def find_node_in_tree(nodes_list, target_id):
@@ -308,22 +364,6 @@ Specification Text:
 Return ONLY the JSON array. Do not include markdown formatting or explanations."""
 
 
-def _truncate_text(text, max_chars=12000):
-    """Truncate text to max_chars while preserving complete paragraphs."""
-    if len(text) <= max_chars:
-        return text
-    truncated = text[:max_chars]
-    # Cut at last paragraph boundary to avoid half-paragraphs
-    last_para = truncated.rfind('\n\n')
-    if last_para > max_chars // 2:
-        truncated = truncated[:last_para]
-    else:
-        last_space = truncated.rfind(' ')
-        if last_space > max_chars // 2:
-            truncated = truncated[:last_space]
-    return truncated + '\n\n... [truncated]'
-
-
 def phase_1_extract_features(node, chapter_title):
     """Extract features and flag cross-references from a node."""
     print(f"  [Phase 1] Extracting features for node {node.get('node_id')}: {chapter_title}")
@@ -445,12 +485,18 @@ def _infer_target_node(ref_name, ref_context):
         tree = load_tree("./results/UCIE_1.1_structure.json")
         nodes = tree.get('structure', tree) if isinstance(tree, dict) else tree
         
-        ref_lower = ref_name.lower()
+        ref_lower = ref_name.lower().strip()
         ctx_lower = ref_context.lower()
         
+        # Extract key terms from ref_name (remove common stop words)
+        stop_words = {'the', 'a', 'an', 'and', 'or', 'of', 'in', 'to', 'for', 'is', 'on', 'at', 'by', 'this', 'that', 'section', 'chapter', 'see', 'refer', 'above', 'below', 'previous', 'following', 'same', 'other', 'such', 'also', 'using', 'used', 'via', 'per', 'as', 'be', 'with', 'from', 'are', 'was', 'were', 'not', 'no', 'but', 'if', 'then', 'than', 'can', 'will', 'should', 'may', 'might', 'shall', 'must'}
+        ref_terms = [t for t in ref_lower.split() if t not in stop_words and len(t) > 2]
+        
+        best_match = None
+        best_score = 0
+        
         def search(nodes_list):
-            best_match = None
-            best_score = 0
+            nonlocal best_match, best_score
             for node in nodes_list:
                 title = node.get('title', '').lower()
                 node_id = node.get('node_id', '')
@@ -458,27 +504,46 @@ def _infer_target_node(ref_name, ref_context):
                 
                 # Score by how well ref_name matches title or summary
                 score = 0
-                if ref_lower in title or title in ref_lower:
-                    score = 10
-                elif ref_lower in summary or summary in ref_lower:
-                    score = 5
-                elif ref_lower in ctx_lower:
-                    # Check if node title appears in context
-                    if node.get('title', '').lower() in ctx_lower:
-                        score = 8
+                
+                # Exact match
+                if ref_lower and ref_lower == title:
+                    score = 100
+                # ref_name is contained in title
+                elif ref_lower and ref_lower in title:
+                    score = 50
+                # title is contained in ref_name
+                elif ref_lower and title in ref_lower:
+                    score = 45
+                # Any ref term matches title word
+                elif ref_terms:
+                    title_words = set(re.findall(r'\w+', title))
+                    for term in ref_terms:
+                        if term in title_words:
+                            score = max(score, 30)
+                        # Check if any title word contains the term
+                        for tw in title_words:
+                            if term in tw or tw in term:
+                                score = max(score, 25)
+                
+                # Also check context for node title mentions
+                if not score and node.get('title', '').lower() in ctx_lower:
+                    score = 20
                 
                 if score > best_score:
                     best_score = score
                     best_match = node_id
                 
                 if 'nodes' in node:
-                    sub_match = search(node['nodes'])
-                    if sub_match and best_score == 0:
-                        best_match = sub_match
-            return best_match
+                    search(node['nodes'])
         
-        return search(nodes)
-    except Exception:
+        search(nodes)
+        
+        # Only return if we have reasonable confidence
+        if best_score >= 20:
+            return best_match
+        return None
+    except Exception as e:
+        print(f"  [WARN] _infer_target_node failed: {e}")
         return None
 
 
@@ -550,7 +615,7 @@ def _build_merged_text(feature, source_text, source_lines, resolved_contexts):
     merged_lines = []
     
     # Original source text (truncated to leave room for LLM output)
-    merged_parts.append(f"=== Original Section Text ===\n{_truncate_text(source_text, max_chars=10000)}")
+    merged_parts.append(f"=== Original Section Text ===\n{_truncate_text(source_text, max_chars=4000)}")
     
     # Add resolved cross-reference contexts
     if resolved_contexts:
@@ -617,7 +682,7 @@ def phase_2_generate_vp(feature, source_text, source_lines, resolved_contexts):
         text=merged_text
     )
     
-    result = run_llm_json(prompt, max_tokens=8000, temperature=0.0)
+    result = run_llm_json(prompt, max_tokens=8000, temperature=0.0, single=True)
     
     if not result:
         return None
@@ -684,26 +749,60 @@ def phase_2_generate_test_cases(vp_details):
         constraints=constraints
     )
     
-    result = run_llm_json(prompt, max_tokens=4000, temperature=0.0)
+    result = run_llm_json(prompt, max_tokens=12000, temperature=0.0)
     
     if not isinstance(result, list):
-        return []
+        # Retry with simpler prompt asking for fewer fields
+        print(f"    [WARN] Test case extraction failed, retrying with simpler prompt.")
+        simple_prompt = f"""You are an expert UVM Verification Engineer.
+Generate 1 to 2 UVM test cases for feature: {feature_name} ({feature_id})
+Verification Goal: {verification_goal}
+Constraints: {constraints}
+
+Output a JSON array of objects with these keys:
+- "TestCaseName": string
+- "Scenario": brief string
+- "TestType": string (directed/constrained_random/regression)
+- "Testcase Steps": array of step strings
+- "Testcase Inputs": string summary
+- "Testcase Outputs": string summary
+- "ScoreboardChecks": string summary
+- "CoveragePoints": string summary
+- "Constraints": string summary
+- "_citation": quote string from spec
+- "VerificationStatus": "VERIFIED" or "REVIEW_REQUIRED"
+
+Return ONLY the JSON array."""
+        result = run_llm_json(simple_prompt, max_tokens=8000, temperature=0.0)
     
-    # Ensure each test case has required keys
+    # Filter out non-dict items (LLM sometimes returns arrays instead of objects)
+    filtered = []
+    for tc in result:
+        if isinstance(tc, dict):
+            filtered.append(tc)
+    
+    if not filtered:
+        # Try extracting dicts from nested arrays (LLM returned [[...], [...]])
+        for item in result:
+            if isinstance(item, list):
+                for sub in item:
+                    if isinstance(sub, dict):
+                        filtered.append(sub)
+    
     required_keys = [
         "TestCaseName", "Scenario", "TestType", "Testcase Steps",
         "Testcase Inputs", "Testcase Outputs", "ScoreboardChecks",
         "CoveragePoints", "Constraints", "_citation", "VerificationStatus"
     ]
     
-    for tc in result:
+    for tc in filtered:
         for key in required_keys:
             if key not in tc:
                 tc[key] = "N/A"
         if tc.get('VerificationStatus') not in ('VERIFIED', 'REVIEW_REQUIRED'):
             tc['VerificationStatus'] = 'REVIEW_REQUIRED'
     
-    return result
+    return filtered
 
 
 # ── Phase 3: Two-Pass Validation ─────────────────────────────────────────────
@@ -749,15 +848,35 @@ def phase_3_validate_plan(vp_details, source_text, source_lines):
         if key in vp_details:
             vp_summary[key] = vp_details[key]
     
+    # Truncate VP JSON to reduce context for validation
+    vp_json_str = json.dumps(vp_summary, indent=2)
+    if len(vp_json_str) > 4000:
+        vp_json_str = vp_json_str[:4000] + "\n  ... (truncated)"
+    
     prompt = VALIDATION_PROMPT.format(
         feature_name=feature_name,
         feature_id=feature_id,
         sub_feature=sub_feature,
-        vp_json=json.dumps(vp_summary, indent=2),
-        text=_truncate_text(source_text, max_chars=10000)
+        vp_json=vp_json_str,
+        text=_truncate_text(source_text, max_chars=3000)
     )
     
-    result = run_llm_json(prompt, max_tokens=6000, temperature=0.0)
+    result = run_llm_json(prompt, max_tokens=8000, temperature=0.0)
+    
+    if not isinstance(result, list):
+        # Retry once with even more aggressive truncation
+        print(f"    [WARN] Validation failed to produce JSON, retrying with tighter truncation.")
+        vp_json_str_short = json.dumps(vp_summary, indent=2)
+        if len(vp_json_str_short) > 2000:
+            vp_json_str_short = vp_json_str_short[:2000] + "\n  ... (truncated)"
+        prompt2 = VALIDATION_PROMPT.format(
+            feature_name=feature_name,
+            feature_id=feature_id,
+            sub_feature=sub_feature,
+            vp_json=vp_json_str_short,
+            text=_truncate_text(source_text, max_chars=2000)
+        )
+        result = run_llm_json(prompt2, max_tokens=8000, temperature=0.0)
     
     if not isinstance(result, list):
         print(f"    [WARN] Validation failed to produce JSON, skipping validation.")
@@ -780,7 +899,10 @@ def phase_3_validate_plan(vp_details, source_text, source_lines):
         # If UNVERIFIED with a suggested correction, apply it
         if status == 'UNVERIFIED' and correction and correction != 'N/A':
             if field_name in vp_details:
-                vp_details[field_name] = correction
+                if isinstance(vp_details[field_name], dict):
+                    vp_details[field_name]['value'] = correction
+                else:
+                    vp_details[field_name] = correction
                 vp_details[f"review_status_{field_name}"] = f"UNVERIFIED - corrected: {comment}"
             else:
                 vp_details[field_name] = correction
