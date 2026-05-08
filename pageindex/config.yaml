@@ -8,3 +8,10 @@ if_add_node_id: "yes"
 if_add_node_summary: "yes"
 if_add_doc_description: "no"
 if_add_node_text: "no"
+
+# Verification pipeline settings
+vp_model: "openai/unsloth/Qwen3.6-35B-A3B-GGUF:Q8_K_XL"
+if_validate_plans: true
+citation_format: "quote+page"
+max_cross_ref_paragraphs: 5
+max_workers: 2

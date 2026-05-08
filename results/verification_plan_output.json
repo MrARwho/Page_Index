@@ -1,0 +1,13 @@
+{
+  "doc_name": "DUT_Specification",
+  "total_features": 0,
+  "total_test_cases": 0,
+  "validation_config": {
+    "if_validate_plans": true,
+    "citation_format": "quote+page"
+  },
+  "nodes": [],
+  "global": {
+    "registers_and_ports": []
+  }
+}

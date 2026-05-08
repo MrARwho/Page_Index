@@ -1,5 +1,6 @@
 import json
 import PyPDF2
+import re
 
 try:
     from .utils import get_number_of_pages, remove_fields
@@ -135,3 +136,110 @@ def get_page_content(documents: dict, doc_id: str, pages: str) -> str:
         return json.dumps({'error': f'Failed to read page content: {e}'})
 
     return json.dumps(content, ensure_ascii=False)
+
+
+def _get_page_text_with_lines(pdf_reader, page_num_0: int) -> list[dict]:
+    """Extract text from a single PDF page with line numbers (0-indexed within page)."""
+    page = pdf_reader.pages[page_num_0]
+    text = page.extract_text() or ''
+    lines = text.split('\n')
+    return [
+        {'line': i, 'content': line.strip()}
+        for i, line in enumerate(lines)
+        if line.strip()
+    ]
+
+
+def get_page_content_with_citations(doc_info: dict, node: dict, citation_format: str = 'quote+page') -> dict:
+    """
+    Extract text from a node's pages with citations (line numbers + page numbers).
+    
+    Returns a dict with:
+    - 'text': raw concatenated text
+    - 'text_with_lines': list of dicts with page, line, content for citation lookup
+    - 'page_range': (start_page, end_page)
+    """
+    start = node.get('start_index')
+    end = node.get('end_index')
+    
+    if start is None or end is None:
+        return {'text': '', 'text_with_lines': [], 'page_range': (0, 0)}
+    
+    # 1-indexed page range
+    start_page = start
+    end_page = end
+    
+    text_with_lines = []
+    all_text_parts = []
+    
+    # Try cached pages first
+    cached_pages = doc_info.get('pages')
+    if cached_pages:
+        page_map = {p['page']: p['content'] for p in cached_pages}
+        for p in range(start_page, end_page + 1):
+            if p in page_map:
+                content = page_map[p]
+                lines = content.split('\n')
+                for i, line in enumerate(lines):
+                    stripped = line.strip()
+                    if stripped:
+                        text_with_lines.append({
+                            'page': p,
+                            'line': i,
+                            'content': stripped
+                        })
+                all_text_parts.append(content + '\n')
+    else:
+        # Fallback to PDF reader
+        path = doc_info.get('path', '')
+        if not path:
+            return {'text': '', 'text_with_lines': [], 'page_range': (start_page, end_page)}
+        try:
+            with open(path, 'rb') as f:
+                pdf_reader = PyPDF2.PdfReader(f)
+                for p in range(start_page, end_page + 1):
+                    if 1 <= p <= len(pdf_reader.pages):
+                        page_text_lines = _get_page_text_with_lines(pdf_reader, p - 1)
+                        text_with_lines.extend(page_text_lines)
+                        all_text_parts.append(page_text_lines[0]['content'] if page_text_lines else '')
+        except Exception:
+            pass
+    
+    raw_text = '\n'.join(all_text_parts)
+    
+    return {
+        'text': raw_text,
+        'text_with_lines': text_with_lines,
+        'page_range': (start_page, end_page)
+    }
+
+
+def find_citation_by_quote(text_with_lines: list[dict], quote: str) -> dict:
+    """
+    Find the page and line number for a given quote in the extracted text lines.
+    Returns {'page': int, 'line': int, 'matched_content': str} or None.
+    """
+    if not quote or not text_with_lines:
+        return None
+    
+    quote_normalized = quote.strip().lower()
+    
+    # Try exact match first
+    for entry in text_with_lines:
+        if entry['content'].strip().lower() == quote_normalized:
+            return {
+                'page': entry['page'],
+                'line': entry['line'],
+                'matched_content': entry['content']
+            }
+    
+    # Try substring match (quote appears within a longer line)
+    for entry in text_with_lines:
+        if quote_normalized in entry['content'].strip().lower():
+            return {
+                'page': entry['page'],
+                'line': entry['line'],
+                'matched_content': entry['content']
+            }
+    
+    return None
