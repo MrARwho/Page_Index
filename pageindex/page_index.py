@@ -421,10 +421,12 @@ def calculate_page_offset(pairs):
     return most_common
 
 def add_page_offset_to_toc_json(data, offset):
+    if offset is None:
+        return data
     for i in range(len(data)):
         if data[i].get('page') is not None and isinstance(data[i]['page'], int):
             data[i]['physical_index'] = data[i]['page'] + offset
-            del data[i]['page']
+            data[i].pop('page', None)
     
     return data
 
@@ -668,7 +670,10 @@ def process_toc_with_page_numbers(toc_content, toc_page_list, page_list, toc_che
     logger.info(f'matching_pairs: {matching_pairs}')
 
     offset = calculate_page_offset(matching_pairs)
-    logger.info(f'offset: {offset}')
+    if logger:
+        logger.info(f'offset: {offset}')
+        if offset is None:
+            logger.warning("Could not calculate page offset. Physical indices will be determined page by page.")
 
     toc_with_page_number = add_page_offset_to_toc_json(toc_with_page_number, offset)
     logger.info(f'toc_with_page_number: {toc_with_page_number}')
@@ -710,11 +715,11 @@ def process_none_page_numbers(toc_items, page_list, start_index=1, model=None):
                     continue
 
             item_copy = copy.deepcopy(item)
-            del item_copy['page']
+            item_copy.pop('page', None)
             result = add_page_number_to_toc(page_contents, item_copy, model)
-            if isinstance(result[0]['physical_index'], str) and result[0]['physical_index'].startswith('<physical_index'):
+            if result and isinstance(result[0].get('physical_index'), str) and result[0]['physical_index'].startswith('<physical_index'):
                 item['physical_index'] = int(result[0]['physical_index'].split('_')[-1].rstrip('>').strip())
-                del item['page']
+                item.pop('page', None)
     
     return toc_items
 

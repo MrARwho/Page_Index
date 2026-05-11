@@ -185,17 +185,60 @@ def extract_json(content):
         logging.error(f"Unexpected error while extracting JSON: {e}")
         return {}
 
-def write_node_id(data, node_id=0):
+def get_dynamic_k(data):
+    """
+    Scans the entire TOC hierarchy
+    Determines the maximum number of children any node contains
+    Dynamically scales k to the nearest power of 10
+    """
+    max_children = 0
+    def scan(node):
+        nonlocal max_children
+        if isinstance(node, dict):
+            children = node.get('nodes', [])
+            if len(children) > max_children:
+                max_children = len(children)
+            for child in children:
+                scan(child)
+        elif isinstance(node, list):
+            if len(node) > max_children:
+                max_children = len(node)
+            for item in node:
+                scan(item)
+    
+    scan(data)
+    
+    if max_children <= 10:
+        return 10
+        
+    import math
+    return int(10 ** math.ceil(math.log10(max_children)))
+
+def write_node_id(data, k=None, parent_id=1):
+    """Assign hierarchical N-ary tree node IDs.
+    Child ID = k * (i - 1) + (n + 1)
+    """
+    if k is None:
+        k = get_dynamic_k(data)
+
     if isinstance(data, dict):
-        data['node_id'] = str(node_id).zfill(4)
-        node_id += 1
-        for key in list(data.keys()):
-            if 'nodes' in key:
-                node_id = write_node_id(data[key], node_id)
+        if 'node_id' not in data:
+            data['node_id'] = k * (parent_id - 1) + 2
+        if 'nodes' in data and data['nodes']:
+            write_node_id(data['nodes'], k=k, parent_id=data['node_id'])
+
     elif isinstance(data, list):
-        for index in range(len(data)):
-            node_id = write_node_id(data[index], node_id)
-    return node_id
+        for index, item in enumerate(data):
+            n = index + 1
+            i = parent_id
+            child_id = k * (i - 1) + (n + 1)
+            
+            if isinstance(item, dict):
+                item['node_id'] = child_id
+                if 'nodes' in item and item['nodes']:
+                    write_node_id(item['nodes'], k=k, parent_id=child_id)
+
+    return k
 
 def get_nodes(structure):
     if isinstance(structure, dict):
@@ -763,4 +806,3 @@ def print_tree(tree, indent=0):
 def print_wrapped(text, width=100):
     for line in text.splitlines():
         print(textwrap.fill(line, width=width))
-
