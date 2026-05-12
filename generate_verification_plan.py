@@ -381,8 +381,23 @@ def phase_1_extract_features(node, chapter_title):
     if not isinstance(result, list):
         return {'features': [], 'text': text, 'node_id': node.get('node_id'), 'text_with_lines': text_with_lines}
     
+    valid_features = []
+    
+    # Flatten if LLM wrapped objects in an extra list
+    if len(result) > 0 and isinstance(result[0], list):
+        flat_result = []
+        for item in result:
+            if isinstance(item, list):
+                flat_result.extend(item)
+            else:
+                flat_result.append(item)
+        result = flat_result
+
     # Validate and clean references
     for feature in result:
+        if not isinstance(feature, dict):
+            continue
+            
         refs = feature.get('_references', [])
         if isinstance(refs, list):
             for ref in refs:
@@ -394,9 +409,11 @@ def phase_1_extract_features(node, chapter_title):
                     ref.setdefault('_quote', '')
                     ref.setdefault('_page', 0)
                     ref.setdefault('_line', 0)
+        
+        valid_features.append(feature)
     
     return {
-        'features': result,
+        'features': valid_features,
         'text': text,
         'node_id': node.get('node_id'),
         'text_with_lines': text_with_lines
